@@ -12,7 +12,7 @@ import matplotlib.image as image
 from PIL import Image
 from resizeimage import resizeimage
 import random
-
+import pandas as pd
 
 # open image 
 #img = Image.open('test.jpg')
@@ -34,7 +34,7 @@ for i in range (0,length):
     
 
 #getting the datasets
-datasets_files = glob.glob('dataset/*.png')
+datasets_files = glob.glob('dataset/*.jpg')
 dataset = []
 for i in range(0,len(datasets_files)):
     dataset.append(Image.open(datasets_files[i]))
@@ -43,18 +43,22 @@ for i in range(0,len(datasets_files)):
 #input_image = Image.open('PNG.png')
 #bc_width , bc_height = img.size
 
+DataOut =[['image_name','xmin','xmax','ymin','ymax','class_id']]
 
 # the size of image we putting inside the data generator
-input_width , input_height = input_image.size
+
 i = 0
 #preparing the image generator
-for i in range(1,100):
+for i in range(1,1000):
     #getting a random background
     random_background = back_grounds[random.randint(0,len(back_grounds)-1)]
     bc_width , bc_height = random_background.size
     
     # getting a random input image from dataset
     random_input = dataset[random.randint(0,len(dataset)-1)]
+    input_width , input_height = random_input.size
+    random_size_for_input = random.randint(input_width/25 , input_width/4)
+    random_input = random_input.resize((int(random_size_for_input) , int(random_size_for_input/5)), Image.ANTIALIAS)
     input_width , input_height = random_input.size
     
     #pick a random place for the image
@@ -66,21 +70,30 @@ for i in range(1,100):
     #crop the background image to place  and make a copy of it
     crop_rectangle = (random_left , random_upper , right , lower)
     new_image=  random_background.crop(crop_rectangle)
+    new_image = new_image.resize((300,300),Image.ANTIALIAS)
+    
     #generating random location for input image on background 
     new_image_width , new_image_height = new_image.size
-    out_put_left = random.randint(0,new_image_width - input_width )
-    out_put_upper = random.randint(0,new_image_height - input_height)
-    new_image.paste(random_input,(out_put_left,out_put_upper),mask=random_input)
-    new_image = new_image.resize((300,300),Image.ANTIALIAS)
-    new_image.save('images/'+str(i)+'.jpg',quality=95)
+    out_put_left = random.randint(0,300 - input_width )
+    out_put_upper = random.randint(0,300 - input_height)
+    new_image.paste(random_input,(out_put_left,out_put_upper))
+    appendable = [str(i)+'.jpg' , out_put_left,out_put_left+input_width , out_put_upper , out_put_upper+new_image_height , 1]
+    DataOut.append(appendable)
+    new_image.save('images/train/'+str(i)+'.jpg',quality=95)
 #    final_images[i] = new_image
 #    plt.imshow(new_image)
-    Image._show(new_image)
+    #Image._show(new_image)
     
 
 #get image putput size 
 
 
+
+DataOut = np.array(DataOut)
+
+DataOut=pd.DataFrame(DataOut,index=None,columns=None)
+
+DataOut.to_csv('train.csv',header=False,index=None)
 
 
 
